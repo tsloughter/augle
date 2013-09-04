@@ -1,0 +1,17 @@
+%% -*- erlang -*-
+{application, eoauth2,
+ [{description, ""},
+  {vsn, "0.1.0"},
+  {registered, [eoauth2_sup]},
+  {mod, {eoauth2_app, []}},
+  {start_phases, []},
+  {applications, [
+                 kernel
+                 ,stdlib
+                 ,sasl
+                 ,lager
+                 ,ssl
+                 ,hackney
+                 ]},
+  {env, []}
+ ]}.
