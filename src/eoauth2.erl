@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(eoauth2).
 
--export([jwt_access_token/4]).
+-export([jwt_access_token/6]).
 
-jwt_access_token(Iss, Scope, Aud, EncodedPrivateKey) ->
-    eoauth2_jwt:access_token(Iss, Scope, Aud, EncodedPrivateKey).
+jwt_access_token(Host, Path, Iss, Scope, Aud, EncodedPrivateKey) ->
+    eoauth2_jwt:access_token(Host, Path, Iss, Scope, Aud, EncodedPrivateKey).
