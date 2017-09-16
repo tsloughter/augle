@@ -1,0 +1,18 @@
+%% -*- erlang -*-
+{application, augle,
+ [{description, ""},
+  {vsn, "0.3.0"},
+  {registered, []},
+  {mod, {augle_app, []}},
+  {start_phases, []},
+  {applications, [kernel,
+                  stdlib,
+                  sasl,
+                  ssl,
+                  hackney]},
+  {env, []},
+
+  {maintainers, ["Tristan Sloughter"]},
+  {licenses, ["Apache 2.0"]},
+  {links, [{"GitHub", "https://github.com/tsloughter/augle"}]}
+ ]}.
