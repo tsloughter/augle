@@ -7,8 +7,8 @@
   {start_phases, []},
   {applications, [kernel,
                   stdlib,
-                  sasl,
                   ssl,
+                  jsx,
                   hackney]},
   {env, []},
 
