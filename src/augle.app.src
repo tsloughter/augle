@@ -1,6 +1,6 @@
 %% -*- erlang -*-
 {application, augle,
- [{description, ""},
+ [{description, "Google service account access token handling"},
   {vsn, "0.3.0"},
   {registered, []},
   {mod, {augle_app, []}},

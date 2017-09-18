@@ -8,28 +8,41 @@
 %%%-------------------------------------------------------------------
 -module(augle_jwt).
 
--export([access_token/4]).
+-export([access_token/3]).
 
 -include_lib("public_key/include/public_key.hrl").
 
--define(HOST, <<"https://www.googleapis.com">>).
--define(TOKEN_PATH, <<"/oauth2/v4/token">>).
+-define(HOST, "https://www.googleapis.com").
+-define(TOKEN_PATH, "/oauth2/v4/token").
 
+-define(AUD, <<"https://www.googleapis.com/oauth2/v4/token">>).
+-define(URLENCODED_CONTENT_TYPE, <<"application/x-www-form-urlencoded">>).
 -define(JWT_HEADER, [{alg, <<"RS256">>}, {typ, <<"JWT">>}]).
 
-access_token(Iss, Scope, Aud, EncodedPrivateKey) ->
-    Jwt = jwt(Iss, Scope, Aud, EncodedPrivateKey),
+access_token(Iss, Scopes, EncodedPrivateKey) ->
+    Jwt = jwt(Iss, Scopes, EncodedPrivateKey),
     Uri = <<"grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=">>,
-    make_request(post, ?HOST, ?TOKEN_PATH,
-                 [{<<"Content-Type">>, <<"application/x-www-form-urlencoded">>}],
-                 <<Uri/binary, Jwt/binary>>).
+    case hackney:post(<<?HOST, ?TOKEN_PATH>>,
+                      [{<<"Content-Type">>, ?URLENCODED_CONTENT_TYPE}],
+                      <<Uri/binary, Jwt/binary>>, []) of
+        {ok, 200, _RespHeaders, Client} ->
+            {ok, Result} = hackney:body(Client),
+            {ok, augle_utils:decode_json(Result)};
+        {ok, _Status, _RespHeaders, Client} ->
+            {ok, ErrorJson} = hackney:body(Client),
+            Reason = augle_utils:decode_json(ErrorJson),
+            %% error_logger:info_msg("error fetching access token: ~s", [format_error(Reason)]),
+            {error, Reason};
+        {error, Reason} ->
+            {error, Reason}
+    end.
 
-jwt(Iss, Scope, Aud, EncodedPrivateKey) ->
+jwt(Iss, Scopes, EncodedPrivateKey) ->
     [PemEntry] = public_key:pem_decode(EncodedPrivateKey),
     PrivateKey = asn1_decode(public_key:pem_entry_decode(PemEntry)),
 
     EncodedJWTHeader = encode(?JWT_HEADER),
-    EncodedJWTClaimSet = encode(jwt_claim_set(Iss, Scope, Aud)),
+    EncodedJWTClaimSet = encode(jwt_claim_set(Iss, Scopes)),
     Signature = compute_signature(EncodedJWTHeader, EncodedJWTClaimSet, PrivateKey),
 
     binary:replace(
@@ -41,10 +54,10 @@ asn1_decode(#'PrivateKeyInfo'{privateKey=DerKey}) ->
 asn1_decode(Der) ->
     Der.
 
-jwt_claim_set(Iss, Scope, Aud) ->
+jwt_claim_set(Iss, Scopes) ->
     [{iss, Iss},
-     {scope, Scope},
-     {aud, Aud},
+     {scope, Scopes},
+     {aud, ?AUD},
      {exp, calendar:datetime_to_gregorian_seconds(calendar:universal_time()) - 62167219200 + 3600},
      {iat, calendar:datetime_to_gregorian_seconds(calendar:universal_time()) - 62167219200}].
 
@@ -56,23 +69,6 @@ compute_signature(Header, ClaimSet, #'RSAPrivateKey'{publicExponent=Exponent
                                                     ,privateExponent=PrivateExponent}) ->
     base64:encode(crypto:sign(rsa, sha256, <<Header/binary, ".", ClaimSet/binary>>, [Exponent, Modulus, PrivateExponent])).
 
-make_request(Method, Url, Path, Headers, Body) ->
-    case hackney:request(Method, <<Url/binary, Path/binary>>,
-                         Headers,
-                         Body, []) of
-        {ok, 200, _RespHeaders, Client} ->
-            {ok, Result} = hackney:body(Client),
-            jsx:decode(Result, [return_maps]);
-        {ok, _Status, _RespHeaders, Client} ->
-            {ok, ErrorJson} = hackney:body(Client),
-            Reason = jsx:decode(ErrorJson, [return_maps]),
-            %% error_logger:info_msg("error fetching access token: ~s", [format_error(Reason)]),
-            {error, Reason};
-        {error, Reason} ->
-            {error, Reason}
-    end.
-
-
-%% format_error(#{<<"error">> := Error,
-%%                <<"error_description">> := Description}) ->
+%% format_error(#{error := Error,
+%%                error_description := Description}) ->
 %%     io_lib:format("error=~s description=~s", [Error, Description]).
