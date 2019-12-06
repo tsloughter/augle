@@ -65,9 +65,6 @@ app_default_credentials() ->
     augle_gcloud_sdk:app_default_credentials(<<"default">>, []).
 
 -spec app_default_credentials(scopes()) -> {ok, creds()} | {error, term()}.
-app_default_credentials(Scopes) when is_list(Scopes) ->
-    CombinedScopes = iolist_to_binary(lists:join($,, Scopes)),
-    augle_gcloud_sdk:app_default_credentials(<<"default">>, CombinedScopes);
 app_default_credentials(Scopes) ->
     augle_gcloud_sdk:app_default_credentials(<<"default">>, Scopes).
 

@@ -35,6 +35,9 @@ app_default_credentials(ServiceAccount, Scopes) ->
             creds_from_file(Path, Scopes)
     end.
 
+creds_from_file(Path, Scopes) when is_list(Scopes) ->
+    CombinedScopes = iolist_to_binary(lists:join($,, Scopes)),
+    creds_from_file(Path, CombinedScopes);
 creds_from_file(Path, Scopes) ->
     {ok, File} = file:read_file(Path),
     #{project_id := _ProjectId,
